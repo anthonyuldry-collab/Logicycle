@@ -3,15 +3,15 @@ import { getAuth } from "firebase/auth";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Your web app's Firebase configuration, provided by the user
+// Your web app's Firebase configuration, using environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyBDHmsIdstWYdi4yHMW0PE7rSsCnvnkm7k",
-  authDomain: "logicycle01.firebaseapp.com",
-  projectId: "logicycle01",
-  storageBucket: "logicycle01.appspot.com",
-  messagingSenderId: "373355040435",
-  appId: "1:373355040435:web:c85b13e61c6fa10d0eeac6",
-  measurementId: "G-03X2FB0F0B"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
