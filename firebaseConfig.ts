@@ -3,15 +3,15 @@ import { getAuth } from "firebase/auth";
 import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Your web app's Firebase configuration, using environment variables
+// Your web app's Firebase configuration, using hardcoded values
 const firebaseConfig = {
-  apiKey: (process as any)?.env?.API_KEY,
-  authDomain: (process as any)?.env?.AUTH_DOMAIN,
-  projectId: (process as any)?.env?.PROJECT_ID,
-  storageBucket: (process as any)?.env?.STORAGE_BUCKET,
-  messagingSenderId: (process as any)?.env?.MESSAGING_SENDER_ID,
-  appId: (process as any)?.env?.APP_ID,
-  measurementId: (process as any)?.env?.MEASUREMENT_ID
+  apiKey: "AIzaSyBDHmsIdstWYdi4yHMW0PE7rSsCnvnkm7k",
+  authDomain: "logicycle01.firebaseapp.com",
+  projectId: "logicycle01",
+  storageBucket: "logicycle01.appspot.com",
+  messagingSenderId: "373355040435",
+  appId: "1:373355040435:web:c85b13e61c6fa10d0eeac6",
+  measurementId: "G-03X2FB0F0B"
 };
 
 // Initialize Firebase
