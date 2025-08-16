@@ -1,3 +1,4 @@
+
 import { db, storage } from '../firebaseConfig';
 import { 
   collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc, 
@@ -27,9 +28,21 @@ const cleanDataForFirebase = (data: any): any => {
         return data;
     }
 
+    // Firestore handles Date objects automatically, so we should not convert them to empty objects.
+    if (data instanceof Date) {
+        return data;
+    }
+
+    // Only recurse into plain arrays. For objects, we check if they are plain objects.
     if (Array.isArray(data)) {
-        // Filter out any undefined values from the array before mapping
+        // Firestore doesn't allow `undefined` in arrays, so we filter them out.
         return data.filter(item => item !== undefined).map(item => cleanDataForFirebase(item));
+    }
+    
+    // This check for plain objects avoids recursing into class instances (like Firebase internals)
+    // which may contain circular references or methods not suitable for Firestore.
+    if (data.constructor !== Object) {
+        return data;
     }
 
     const cleaned: { [key: string]: any } = {};
