@@ -1,10 +1,4 @@
-
 import { db, storage } from '../firebaseConfig';
-import { 
-  collection, doc, getDoc, getDocs, setDoc, addDoc, deleteDoc, 
-  writeBatch 
-} from 'firebase/firestore';
-import { ref, uploadString, getDownloadURL } from '@firebase/storage';
 import { 
   TeamState, 
   GlobalState, 
@@ -59,17 +53,17 @@ const cleanDataForFirebase = (data: any): any => {
 
 // --- FILE UPLOAD ---
 export const uploadFile = async (base64: string, path: string, mimeType: string): Promise<string> => {
-    const storageRef = ref(storage, path);
+    const storageRef = storage.ref(path);
     const base64Data = base64.split(',')[1];
-    const snapshot = await uploadString(storageRef, base64Data, 'base64', { contentType: mimeType });
-    return getDownloadURL(snapshot.ref);
+    const snapshot = await storageRef.putString(base64Data, 'base64', { contentType: mimeType });
+    return snapshot.ref.getDownloadURL();
 };
 
 // --- AUTH & USER ---
 export const getUserProfile = async (userId: string): Promise<User | null> => {
-    const userDocRef = doc(db, 'users', userId);
-    const userDocSnap = await getDoc(userDocRef);
-    if (userDocSnap.exists()) {
+    const userDocRef = db.collection('users').doc(userId);
+    const userDocSnap = await userDocRef.get();
+    if (userDocSnap.exists) {
         return { id: userDocSnap.id, ...userDocSnap.data() } as User;
     }
     return null;
@@ -91,9 +85,9 @@ export const createUserProfile = async (uid: string, signupData: SignupData) => 
         };
         
         const cleanedNewUser = cleanDataForFirebase(newUser);
-        const userDocRef = doc(db, 'users', uid);
+        const userDocRef = db.collection('users').doc(uid);
         
-        await setDoc(userDocRef, cleanedNewUser);
+        await userDocRef.set(cleanedNewUser);
 
     } catch (error) {
         console.error("FIRESTORE WRITE ERROR:", error);
@@ -102,8 +96,8 @@ export const createUserProfile = async (uid: string, signupData: SignupData) => 
 };
 
 export const requestToJoinTeam = async (userId: string, teamId: string, userRole: UserRole) => {
-    const membershipsColRef = collection(db, 'teamMemberships');
-    await addDoc(membershipsColRef, {
+    const membershipsColRef = db.collection('teamMemberships');
+    await membershipsColRef.add({
         userId: userId,
         teamId: teamId,
         status: TeamMembershipStatus.PENDING,
@@ -113,20 +107,20 @@ export const requestToJoinTeam = async (userId: string, teamId: string, userRole
 
 export const createTeamForUser = async (userId: string, teamData: { name: string; level: TeamLevel; country: string; }, userRole: UserRole) => {
     // Create the team
-    const teamsColRef = collection(db, 'teams');
-    const newTeamRef = await addDoc(teamsColRef, teamData);
+    const teamsColRef = db.collection('teams');
+    const newTeamRef = await teamsColRef.add(teamData);
     
     // Initialize team subcollections using a batch write
-    const batch = writeBatch(db);
+    const batch = db.batch();
     for (const collName of TEAM_STATE_COLLECTIONS) {
-        const subCollRef = doc(db, 'teams', newTeamRef.id, collName, '_init_');
+        const subCollRef = db.collection('teams').doc(newTeamRef.id).collection(collName).doc('_init_');
         batch.set(subCollRef, { createdAt: new Date().toISOString() });
     }
     await batch.commit();
 
     // Make the creator an active admin
-    const membershipsColRef = collection(db, 'teamMemberships');
-    await addDoc(membershipsColRef, {
+    const membershipsColRef = db.collection('teamMemberships');
+    await membershipsColRef.add({
         userId: userId,
         teamId: newTeamRef.id,
         status: TeamMembershipStatus.ACTIVE,
@@ -135,17 +129,17 @@ export const createTeamForUser = async (userId: string, teamData: { name: string
     });
 
     // Update user permission role
-    const userDocRef = doc(db, 'users', userId);
-    await setDoc(userDocRef, { permissionRole: TeamRole.ADMIN }, { merge: true });
+    const userDocRef = db.collection('users').doc(userId);
+    await userDocRef.set({ permissionRole: TeamRole.ADMIN }, { merge: true });
 };
 
 // --- GLOBAL DATA ---
 export const getGlobalData = async (): Promise<Partial<GlobalState>> => {
-    const usersSnap = await getDocs(collection(db, 'users'));
-    const teamsSnap = await getDocs(collection(db, 'teams'));
-    const membershipsSnap = await getDocs(collection(db, 'teamMemberships'));
-    const permissionsSnap = await getDocs(collection(db, 'permissions'));
-    const permissionRolesSnap = await getDocs(collection(db, 'permissionRoles'));
+    const usersSnap = await db.collection('users').get();
+    const teamsSnap = await db.collection('teams').get();
+    const membershipsSnap = await db.collection('teamMemberships').get();
+    const permissionsSnap = await db.collection('permissions').get();
+    const permissionRolesSnap = await db.collection('permissionRoles').get();
     
     const permissionsDoc = permissionsSnap.docs[0];
 
@@ -182,11 +176,11 @@ export const getEffectivePermissions = (user: User, basePermissions: AppPermissi
 
 // --- TEAM DATA ---
 export const getTeamData = async (teamId: string): Promise<Partial<TeamState>> => {
-    const teamDocRef = doc(db, 'teams', teamId);
+    const teamDocRef = db.collection('teams').doc(teamId);
     
     const teamState: Partial<TeamState> = {};
-    const teamDocSnap = await getDoc(teamDocRef);
-    if(teamDocSnap.exists()) {
+    const teamDocSnap = await teamDocRef.get();
+    if(teamDocSnap.exists) {
         const teamData = teamDocSnap.data();
         if (teamData) {
             Object.assign(teamState, {
@@ -202,8 +196,8 @@ export const getTeamData = async (teamId: string): Promise<Partial<TeamState>> =
     }
 
     for (const coll of TEAM_STATE_COLLECTIONS) {
-        const collRef = collection(teamDocRef, coll);
-        const snapshot = await getDocs(collRef);
+        const collRef = teamDocRef.collection(coll);
+        const snapshot = await collRef.get();
         (teamState as any)[coll] = snapshot.docs
             .filter(d => d.id !== '_init_')
             .map(d => ({ id: d.id, ...d.data() }));
@@ -216,24 +210,24 @@ export const getTeamData = async (teamId: string): Promise<Partial<TeamState>> =
 export const saveData = async <T extends { id?: string }>(teamId: string, collectionName: string, data: T): Promise<string> => {
     const { id, ...dataToSave } = data;
     const cleanedData = cleanDataForFirebase(dataToSave);
-    const subCollectionRef = collection(db, 'teams', teamId, collectionName);
+    const subCollectionRef = db.collection('teams').doc(teamId).collection(collectionName);
     
     if (id) {
-        const docRef = doc(subCollectionRef, id);
-        await setDoc(docRef, cleanedData, { merge: true });
+        const docRef = subCollectionRef.doc(id);
+        await docRef.set(cleanedData, { merge: true });
         return id;
     } else {
-        const docRef = await addDoc(subCollectionRef, cleanedData);
+        const docRef = await subCollectionRef.add(cleanedData);
         return docRef.id;
     }
 };
 
 export const deleteData = async (teamId: string, collectionName: string, docId: string) => {
-    const docRef = doc(db, 'teams', teamId, collectionName, docId);
-    await deleteDoc(docRef);
+    const docRef = db.collection('teams').doc(teamId).collection(collectionName).doc(docId);
+    await docRef.delete();
 };
 
 export const saveTeamSettings = async (teamId: string, settings: Partial<Team>) => {
-    const teamDocRef = doc(db, 'teams', teamId);
-    await setDoc(teamDocRef, settings, { merge: true });
+    const teamDocRef = db.collection('teams').doc(teamId);
+    await teamDocRef.set(settings, { merge: true });
 };
