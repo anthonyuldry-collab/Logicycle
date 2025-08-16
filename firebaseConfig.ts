@@ -1,7 +1,7 @@
-import firebase from "firebase/app";
-import "firebase/auth";
-import "firebase/firestore";
-import "firebase/storage";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore, enablePersistence } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration, using environment variables
 const firebaseConfig = {
@@ -15,15 +15,15 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = !firebase.apps.length ? firebase.initializeApp(firebaseConfig) : firebase.app();
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Export services
-export const auth = app.auth();
-export const db = app.firestore();
-export const storage = app.storage();
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
 
 // Enable Firestore offline persistence
-db.enablePersistence()
+enablePersistence(db)
   .catch((err) => {
     if (err.code == 'failed-precondition') {
       // Multiple tabs open, persistence can only be enabled in one.

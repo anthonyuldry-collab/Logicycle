@@ -52,6 +52,12 @@ import {
 } from './constants';
 
 // Firebase imports
+import { 
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut
+} from "firebase/auth";
 import { auth } from './firebaseConfig';
 import * as firebaseService from './services/firebaseService';
 
@@ -180,7 +186,7 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setIsLoading(true);
         let userProfile = await firebaseService.getUserProfile(firebaseUser.uid);
@@ -203,7 +209,7 @@ const App = () => {
         } else {
           // This case should ideally not be reached if profile creation is successful.
           console.error("Critical: Failed to create or retrieve user profile. Logging out.");
-          auth.signOut(); // Log out to prevent inconsistent state
+          signOut(auth); // Log out to prevent inconsistent state
         }
       } else {
         setCurrentUser(null);
@@ -283,7 +289,7 @@ const App = () => {
   
   const handleLogin = async (email: string, password: string) => {
       try {
-          await auth.signInWithEmailAndPassword(email, password);
+          await signInWithEmailAndPassword(auth, email, password);
           return { success: true, message: '' };
       } catch (error: any) {
           return { success: false, message: error.message };
@@ -292,7 +298,7 @@ const App = () => {
   
   const handleRegister = async (data: SignupData): Promise<{ success: boolean; message: string; }> => {
       try {
-          await auth.createUserWithEmailAndPassword(data.email, data.password);
+          await createUserWithEmailAndPassword(auth, data.email, data.password);
           // The onAuthStateChanged listener will now handle creating the user profile.
           // This prevents race conditions and centralizes profile creation logic.
           return { success: true, message: '' };
@@ -335,7 +341,7 @@ const App = () => {
 
   
   const handleLogout = () => {
-      auth.signOut();
+      signOut(auth);
   };
 
   const navigateTo = (section: AppSection, eventId?: string) => {
