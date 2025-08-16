@@ -1,3 +1,7 @@
-// This file has been cleared as it was empty and unused.
-// Its functionality should be integrated into another component if needed.
-export {};
+import React from 'react';
+
+const EventKeyLocationsTab: React.FC = () => {
+  return null;
+};
+
+export default EventKeyLocationsTab;
