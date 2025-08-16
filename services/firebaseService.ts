@@ -27,35 +27,40 @@ import {
 import { SignupData } from '../sections/SignupView';
 import { SECTIONS, TEAM_STATE_COLLECTIONS } from '../constants';
 
-// Helper function to remove undefined properties from an object recursively
+// Helper function to remove undefined properties and complex objects before sending to Firebase.
 const cleanDataForFirebase = (data: any): any => {
-    if (typeof data !== 'object' || data === null) {
+    if (data === null || typeof data !== 'object') {
         return data;
     }
 
-    // Firestore handles Date objects automatically, so we should not convert them to empty objects.
-    if (data instanceof Date) {
+    // Firestore handles Date objects and its own Timestamps.
+    if (data instanceof Date || typeof data.toDate === 'function') {
         return data;
     }
 
-    // Only recurse into plain arrays. For objects, we check if they are plain objects.
     if (Array.isArray(data)) {
-        // Firestore doesn't allow `undefined` in arrays, so we filter them out.
-        return data.filter(item => item !== undefined).map(item => cleanDataForFirebase(item));
+        // Recurse into array elements and filter out undefined results
+        return data.map(item => cleanDataForFirebase(item)).filter(item => item !== undefined);
     }
     
-    // This check for plain objects avoids recursing into class instances (like Firebase internals)
-    // which may contain circular references or methods not suitable for Firestore.
-    if (data.constructor !== Object) {
-        return data;
+    // Crucial check: only process plain JavaScript objects.
+    // This prevents recursion into complex class instances (like Firestore DocumentSnapshots)
+    // which causes circular reference errors.
+    if (Object.prototype.toString.call(data) !== '[object Object]') {
+        // For any other complex object type, return undefined so it gets stripped out during the save.
+        return undefined;
     }
 
     const cleaned: { [key: string]: any } = {};
     for (const key of Object.keys(data)) {
         const value = data[key];
+        // Firestore does not allow 'undefined' as a value.
         if (value !== undefined) {
             const cleanedValue = cleanDataForFirebase(value);
-            cleaned[key] = cleanedValue;
+            // Only add the key if the cleaned value is not undefined.
+            if (cleanedValue !== undefined) {
+                cleaned[key] = cleanedValue;
+            }
         }
     }
     return cleaned;
