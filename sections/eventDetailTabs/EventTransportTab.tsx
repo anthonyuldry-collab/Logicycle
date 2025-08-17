@@ -37,9 +37,9 @@ const initialTransportFormStateFactory = (eventId: string): Omit<EventTransportL
   intermediateStops: [],
 });
 
-const lightInputBaseClasses = "bg-white text-gray-900 border-gray-300 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500";
-const lightInputClasses = `mt-1 block w-full px-3 py-2 border rounded-md shadow-sm sm:text-sm ${lightInputBaseClasses}`;
-const lightSelectClasses = `mt-1 block w-full pl-3 pr-10 py-2 border rounded-md shadow-sm sm:text-sm ${lightInputBaseClasses}`;
+const lightInputBaseClasses = "bg-slate-700 text-slate-200 border-slate-600 placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500";
+const lightInputClasses = `mt-1 block w-full px-3 py-1.5 border rounded-md shadow-sm sm:text-sm ${lightInputBaseClasses}`;
+const lightSelectClasses = `mt-1 block w-full pl-3 pr-10 py-1.5 border rounded-md shadow-sm sm:text-sm ${lightInputBaseClasses}`;
 
 const datesOverlap = (startAStr?: string, endAStr?: string, startBStr?: string, endBStr?: string): boolean => {
   if (!startAStr || !startBStr) return false;
@@ -507,4 +507,121 @@ export const EventTransportTab: React.FC<EventTransportTabProps> = ({
       {isModalOpen && (
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? "Modifier Trajet" : "Ajouter un Trajet"}>
           <form onSubmit={handleSubmit} className="space-y-4 max-h-[85vh] overflow-y-auto p-2 -m-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-slate-800 text-white p-4 -m-2 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="directionModal" className="block text-sm font-medium text-slate-300">Direction</label>
+                  <select name="direction" id="directionModal" value={(currentTransportLeg as EventTransportLeg).direction} onChange={handleInputChange} className={lightSelectClasses}>
+                    {(Object.values(TransportDirection) as TransportDirection[]).map(dir => <option key={dir} value={dir} className="bg-slate-700">{dir}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="assignedVehicleIdModal" className="block text-sm font-medium text-slate-300">Véhicule Assigné</label>
+                  <select name="assignedVehicleId" id="assignedVehicleIdModal" value={(currentTransportLeg as EventTransportLeg).assignedVehicleId || ''} onChange={handleInputChange} className={lightSelectClasses}>
+                      <option value="" className="bg-slate-700">-- Aucun / Autre --</option>
+                      <option value="perso" className="bg-slate-700">Voiture Personnelle</option>
+                      {appState.vehicles.map(v => {
+                          const availability = checkVehicleAvailability(v, (currentTransportLeg as EventTransportLeg).departureDate, (currentTransportLeg as EventTransportLeg).arrivalDate, appState.eventTransportLegs, (currentTransportLeg as EventTransportLeg).id);
+                          return (
+                              <option key={v.id} value={v.id} disabled={availability.status !== 'available'} className="bg-slate-700">
+                                  {v.name} {availability.reason}
+                              </option>
+                          );
+                      })}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300">Départ</label>
+                  <input type="date" name="departureDate" value={(currentTransportLeg as EventTransportLeg).departureDate || ''} onChange={handleInputChange} className={lightInputClasses} style={{ colorScheme: 'dark' }}/>
+                  <input type="time" name="departureTime" value={(currentTransportLeg as EventTransportLeg).departureTime || ''} onChange={handleInputChange} className={`${lightInputClasses} mt-1`}/>
+                  <input type="text" name="departureLocation" value={(currentTransportLeg as EventTransportLeg).departureLocation || ''} onChange={handleInputChange} placeholder="Lieu de départ" className={`${lightInputClasses} mt-1`}/>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300">Arrivée</label>
+                  <input type="date" name="arrivalDate" value={(currentTransportLeg as EventTransportLeg).arrivalDate || ''} onChange={handleInputChange} className={lightInputClasses} style={{ colorScheme: 'dark' }}/>
+                  <input type="time" name="arrivalTime" value={(currentTransportLeg as EventTransportLeg).arrivalTime || ''} onChange={handleInputChange} className={`${lightInputClasses} mt-1`}/>
+                  <input type="text" name="arrivalLocation" value={(currentTransportLeg as EventTransportLeg).arrivalLocation || ''} onChange={handleInputChange} placeholder="Lieu d'arrivée" className={`${lightInputClasses} mt-1`}/>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label htmlFor="driverIdModal" className="block text-sm font-medium text-slate-300">Conducteur</label>
+                <select name="driverId" id="driverIdModal" value={(currentTransportLeg as EventTransportLeg).driverId || ''} onChange={handleInputChange} className={lightSelectClasses}>
+                    <option value="" className="bg-slate-700">-- Sélectionner --</option>
+                    {appState.staff.map(s => <option key={s.id} value={s.id} className="bg-slate-700">{s.firstName} {s.lastName}</option>)}
+                </select>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-slate-300">Occupants</label>
+                <div className="mt-1 p-2 border border-slate-600 rounded-md space-y-1 bg-slate-700 max-h-40 overflow-y-auto">
+                  {allAvailablePeople.map(person => (
+                    <div key={`${person.id}-${person.type}`} className={`flex items-center ${person.isParticipant ? '' : 'opacity-60'}`}>
+                      <input 
+                          type="checkbox" 
+                          id={`occupant-${person.id}-${person.type}`}
+                          checked={(currentTransportLeg as EventTransportLeg).occupants.some(occ => occ.id === person.id && occ.type === person.type)}
+                          onChange={() => handleOccupantChange(person.id, person.type)}
+                          className="h-4 w-4 rounded border-slate-500 bg-slate-800 text-blue-500 focus:ring-blue-500"
+                      />
+                      <label htmlFor={`occupant-${person.id}-${person.type}`} className="ml-2 text-sm text-slate-300">
+                          {person.name} {!person.isParticipant && <span className="text-xs text-slate-400">(hors sélection)</span>}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-slate-300">Étapes Intermédiaires</label>
+                <div className="mt-1 space-y-2">
+                  {(currentTransportLeg as EventTransportLeg).intermediateStops?.map((stop, index) => (
+                      <div key={stop.id} className="p-2 border border-slate-600 rounded-md bg-slate-700">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                              <input type="text" value={stop.location} onChange={e => handleStopChange(index, 'location', e.target.value)} placeholder="Lieu de l'étape" className="input-field-sm text-xs"/>
+                              <input type="date" value={stop.date} onChange={e => handleStopChange(index, 'date', e.target.value)} className="input-field-sm text-xs" style={{colorScheme: 'dark'}}/>
+                              <input type="time" value={stop.time} onChange={e => handleStopChange(index, 'time', e.target.value)} className="input-field-sm text-xs"/>
+                          </div>
+                          <details className="text-xs mt-2">
+                            <summary className="cursor-pointer text-slate-400">Gérer les personnes ({stop.persons.length})</summary>
+                            <div className="mt-1 p-1 border-t border-slate-600 max-h-24 overflow-y-auto grid grid-cols-2 gap-x-2">
+                              {(currentTransportLeg as EventTransportLeg).occupants.map(occ => {
+                                  const person = allAvailablePeople.find(p => p.id === occ.id && p.type === occ.type);
+                                  return person ? (
+                                      <div key={person.id} className="flex items-center">
+                                        <input type="checkbox" id={`stop-${index}-${person.id}`} checked={stop.persons.some(p => p.id === person.id && p.type === person.type)} onChange={() => handleStopPersonChange(index, person.id, person.type)} className="h-3 w-3 rounded-sm"/>
+                                        <label htmlFor={`stop-${index}-${person.id}`} className="ml-1.5">{person.name}</label>
+                                      </div>
+                                  ) : null
+                              })}
+                            </div>
+                          </details>
+                          <div className="flex items-center justify-between mt-2">
+                              <input type="text" value={stop.notes || ''} onChange={e => handleStopChange(index, 'notes', e.target.value)} placeholder="Notes (ex: changement de conducteur)" className="input-field-sm text-xs flex-grow mr-2"/>
+                              <ActionButton type="button" onClick={() => handleRemoveStop(stop.id)} variant="danger" size="sm" icon={<TrashIcon className="w-3 h-3"/>}/>
+                          </div>
+                      </div>
+                  ))}
+                  <ActionButton type="button" onClick={handleAddStop} variant="secondary" size="sm" icon={<PlusCircleIcon className="w-4 h-4"/>}>Ajouter une étape</ActionButton>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label htmlFor="detailsModal" className="block text-sm font-medium text-slate-300">Détails (N° vol, répartition, prix, etc.)</label>
+                <textarea name="details" id="detailsModal" value={(currentTransportLeg as EventTransportLeg).details || ''} onChange={handleInputChange} rows={2} className={lightInputClasses} />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-700">
+                <ActionButton type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Annuler</ActionButton>
+                <ActionButton type="submit">{isEditing ? "Sauvegarder" : "Ajouter"}</ActionButton>
+              </div>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+};
