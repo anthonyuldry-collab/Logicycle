@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && echo 'Build terminé ! Vous pouvez maintenant déployer le dossier dist sur Netlify'"
   },
   "dependencies": {
     "react": "^19.1.0",
