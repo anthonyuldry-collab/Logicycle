@@ -551,7 +551,7 @@ const handleRemoveListItem = (listName: 'workHistory' | 'education' | 'languages
                           {(formData as StaffMember).licenseImageBase64 && (
                               <div className="mt-2">
                                   <img src={`data:${(formData as StaffMember).licenseImageMimeType};base64,${(formData as StaffMember).licenseImageBase64}`} alt="licence" className="max-h-24 rounded border border-slate-500"/>
-                                  <ActionButton type="button" onClick={handleRemoveLicense} variant="danger" size="sm" className="mt-1 text-xs"><TrashIcon className="w-3 h-3 mr-1"/> Supprimer</button>
+                                  <ActionButton type="button" onClick={handleRemoveLicense} variant="danger" size="sm" className="mt-1 text-xs"><TrashIcon className="w-3 h-3 mr-1"/> Supprimer</ActionButton>
                               </div>
                           )}
                       </div>
