@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import ActionButton from '../components/ActionButton';
 import { useTranslations } from '../hooks/useTranslations';
 import { LANGUAGE_OPTIONS } from '../constants';
-import { Team } from '../types';
+import { Team, UserRole, StaffRole, TeamLevel } from '../types';
 
 export interface SignupData {
   email: string;
   firstName: string;
   lastName: string;
   password: string;
+  userRole: UserRole;
+  staffRole?: StaffRole;
 }
 
 interface SignupViewProps {
@@ -23,13 +25,14 @@ const SignupView: React.FC<SignupViewProps> = ({ onRegister, onSwitchToLogin, te
       firstName: '',
       lastName: '',
       password: '',
+      userRole: UserRole.COUREUR,
   });
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { t, language, setLanguage } = useTranslations();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -45,6 +48,11 @@ const SignupView: React.FC<SignupViewProps> = ({ onRegister, onSwitchToLogin, te
     
     if (formData.password.length < 6) {
         setError(t('signupPasswordTooShort'));
+        return;
+    }
+
+    if (formData.userRole === UserRole.STAFF && !formData.staffRole) {
+        setError("Veuillez sélectionner votre fonction de staff.");
         return;
     }
 
@@ -92,6 +100,24 @@ const SignupView: React.FC<SignupViewProps> = ({ onRegister, onSwitchToLogin, te
                 <input type="password" name="password" placeholder={t('signupPasswordPlaceholder')} required value={formData.password} onChange={handleInputChange} className="input-field-sm w-full" />
                 <input type="password" name="confirmPassword" placeholder={t('signupConfirmPasswordPlaceholder')} required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="input-field-sm w-full" />
            </div>
+
+          <h3 className="text-lg font-semibold text-slate-200 pt-2">{t('signupUserRoleLabel')}</h3>
+          <div>
+            <select name="userRole" value={formData.userRole} onChange={handleInputChange} className="input-field-sm w-full">
+                <option value={UserRole.COUREUR}>Coureur</option>
+                <option value={UserRole.STAFF}>Staff</option>
+            </select>
+          </div>
+          {formData.userRole === UserRole.STAFF && (
+            <div>
+                <select name="staffRole" value={formData.staffRole || ''} onChange={handleInputChange} required className="input-field-sm w-full">
+                <option value="">-- {t('signupStaffRoleLabel')} --</option>
+                {Object.values(StaffRole).map(role => (
+                    <option key={role} value={role}>{role}</option>
+                ))}
+                </select>
+            </div>
+          )}
           
           {error && <p className="text-sm text-red-400 text-center">{error}</p>}
           

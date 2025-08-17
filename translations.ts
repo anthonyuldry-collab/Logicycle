@@ -61,7 +61,7 @@ export const translations = {
   signupLastName: { fr: "Nom", en: "Last Name" },
   signupPasswordPlaceholder: { fr: "Mot de passe (6+ caractères)", en: "Password (6+ characters)" },
   signupConfirmPasswordPlaceholder: { fr: "Confirmer le mot de passe", en: "Confirm password" },
-  signupUserRoleLabel: { fr: "Votre rôle principal dans l'équipe", en: "Your main role in the team" },
+  signupUserRoleLabel: { fr: "Votre rôle principal", en: "Your main role" },
   signupStaffRoleLabel: { fr: "Votre fonction spécifique", en: "Your specific function" },
   signupRiderInfoTitle: { fr: "Informations Coureur (Optionnel)", en: "Rider Information (Optional)" },
   signupHeightPlaceholder: { fr: "Taille (cm)", en: "Height (cm)" },

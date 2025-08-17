@@ -153,8 +153,19 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         {groupOrder.map(group => {
-            const sectionsInGroup = groupedSections[group];
+            let sectionsInGroup = groupedSections[group];
             if (!sectionsInGroup) return null;
+
+            // Contextual filtering for "My Space" based on user's functional role
+            if (group === t('sidebarGroupMySpace')) {
+                if (currentUser.userRole === UserRole.COUREUR) {
+                    sectionsInGroup = sectionsInGroup.filter(s => s.id !== 'missionSearch');
+                } else if (currentUser.userRole === UserRole.STAFF || currentUser.userRole === UserRole.MANAGER) {
+                    sectionsInGroup = sectionsInGroup.filter(s => s.id === 'missionSearch');
+                } else {
+                    sectionsInGroup = []; // Guests and other roles don't see "My Space"
+                }
+            }
 
             const visibleSections = sectionsInGroup.filter(section => effectivePermissions[section.id as AppSection]?.includes('view'));
             if (visibleSections.length === 0) return null;

@@ -1,7 +1,7 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import 'firebase/compat/firestore';
+import 'firebase/compat/storage';
 
 // Your web app's Firebase configuration, using hardcoded values
 const firebaseConfig = {
@@ -14,29 +14,28 @@ const firebaseConfig = {
   measurementId: "G-03X2FB0F0B"
 };
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Initialize Firebase if not already initialized
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 // Export services
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+export const auth = firebase.auth();
+export const db = firebase.firestore();
+export const storage = firebase.storage();
 
 // Enable Firestore offline persistence
-enableIndexedDbPersistence(db)
-  .then(() => {
-    console.log("✅ Persistance Firestore activée avec succès");
-  })
+db.enablePersistence()
   .catch((err) => {
     if (err.code == 'failed-precondition') {
       // Multiple tabs open, persistence can only be enabled in one.
       // This is a normal scenario, so we can handle it gracefully.
-      console.warn("⚠️ La persistance Firestore n'a pas pu être activée, probablement car plusieurs onglets sont ouverts.");
+      console.warn("La persistance Firestore n'a pas pu être activée, probablement car plusieurs onglets sont ouverts.");
     } else if (err.code == 'unimplemented') {
       // The current browser does not support all of the
       // features required to enable persistence.
-      console.warn("⚠️ La persistance Firestore n'est pas supportée sur ce navigateur.");
+      console.warn("La persistance Firestore n'est pas supportée sur ce navigateur.");
     } else {
-        console.error("❌ Erreur d'activation de la persistance Firestore:", err);
+        console.error("Erreur d'activation de la persistance Firestore:", err);
     }
   });

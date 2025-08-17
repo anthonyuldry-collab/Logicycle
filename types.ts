@@ -1038,6 +1038,7 @@ export interface Team {
 }
 
 export interface TeamMembership {
+    id?: string;
     userId: string;
     teamId: string;
     status: TeamMembershipStatus;
